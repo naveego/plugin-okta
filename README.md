@@ -1,0 +1,1 @@
+A plugin for connecting Naveego to your Okta domain user data.

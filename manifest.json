@@ -1,0 +1,48 @@
+{
+  "id": "plugin-okta",
+  "displayName": "Okta",
+  "description": "Plugin for integrating data with Okta domains",
+  "apiVersion": "2",
+  "versionDescription": "Version 2",
+  "version": "2.0.0",
+  "iconFile": "icon.png",
+  "executable": "PluginOkta",
+  "kind": "publisher",
+  "os": "$GOOS",
+  "arch": "$GOARCH",
+  "canConfigure": true,
+  "canProduceMultipleSchemas": true,
+  "canAcceptQueryBasedSchemas": false,
+  "canUseOAuth": false,
+  "canWrite": false,
+  "configSchema": {
+    "ui": {
+      "ui:order": [
+        "Domain",
+        "ApiKey"
+      ],
+      "ApiKey": {
+        "ui:widget": "password"
+      }
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "ApiKey" : {
+          "type": "string",
+          "title": "API Key",
+          "description": "API key to use for authentication."
+        },
+        "Domain" : {
+          "type": "string",
+          "title": "Domain",
+          "description": "Your Okta domain. Ex: dev-46541538.okta.com"
+        }
+      },
+      "required": [
+        "Domain",
+        "ApiKey"
+      ]
+    }
+  }
+}
