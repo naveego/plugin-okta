@@ -36,7 +36,7 @@
         "Domain" : {
           "type": "string",
           "title": "Domain",
-          "description": "Your Okta domain. Ex: dev-46541538.okta.com"
+          "description": "Your Okta domain. Ex: dev-########.okta.com"
         }
       },
       "required": [

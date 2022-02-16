@@ -78,13 +78,12 @@ namespace PluginOkta.API.Utility.EndpointHelperEndpoints
             }
             public override async IAsyncEnumerable<Record> ReadRecordsAsync(IApiClient apiClient, Schema schema, bool isDiscoverRead = false)
             {
-                var after = "";
                 var hasMore = true;
                 var settings = await apiClient.GetSettings();
+                var path = $"{settings.Domain.TrimEnd('/')}{QueryPath}";
                 do
                 {
-                    var response = await apiClient.GetAsync($"{settings.Domain.TrimEnd('/')}{QueryPath}{after}");
-
+                    var response = await apiClient.GetAsync(path);
                     if (response.StatusCode == HttpStatusCode.BadRequest)
                     {
                         var errorResponseWrapper =
@@ -98,6 +97,18 @@ namespace PluginOkta.API.Utility.EndpointHelperEndpoints
                     
                     response.EnsureSuccessStatusCode();
 
+                    var linkHeader = response.Headers.GetValues("Link");
+
+                    if (linkHeader.Count() < 2)
+                    {
+                        hasMore = false;
+                    }
+                    else
+                    {
+                        var link = linkHeader.ElementAt(1);
+                        path = link.Split('<', '>')[1];
+                    }
+                    
                     var userResponseWrapper =
                         JsonConvert.DeserializeObject<List<User>>(await response.Content.ReadAsStringAsync());
 
@@ -109,7 +120,6 @@ namespace PluginOkta.API.Utility.EndpointHelperEndpoints
 
                     foreach (var user in userResponseWrapper)
                     {
-                        after = $"&after={user.Id}";
                         var recordMap = new Dictionary<string, string>();
 
                         recordMap["id"] = user.Id;
@@ -189,12 +199,12 @@ namespace PluginOkta.API.Utility.EndpointHelperEndpoints
             }
             public override async IAsyncEnumerable<Record> ReadRecordsAsync(IApiClient apiClient, Schema schema, bool isDiscoverRead = false)
             {
-                var after = "";
                 var hasMore = true;
                 var settings = await apiClient.GetSettings();
+                var path = $"{settings.Domain.TrimEnd('/')}{QueryPath}";
                 do
                 {
-                    var response = await apiClient.GetAsync($"{settings.Domain.TrimEnd('/')}{QueryPath}{after}");
+                    var response = await apiClient.GetAsync(path);
 
                     if (response.StatusCode == HttpStatusCode.BadRequest)
                     {
@@ -208,7 +218,18 @@ namespace PluginOkta.API.Utility.EndpointHelperEndpoints
                     }
                     
                     response.EnsureSuccessStatusCode();
+                    
+                    var linkHeader = response.Headers.GetValues("Link");
 
+                    if (linkHeader.Count() < 2)
+                    {
+                        hasMore = false;
+                    }
+                    else
+                    {
+                        var link = linkHeader.ElementAt(1);
+                        path = link.Split('<', '>')[1];
+                    }
                     var userResponseWrapper =
                         JsonConvert.DeserializeObject<List<User>>(await response.Content.ReadAsStringAsync());
 
@@ -220,7 +241,6 @@ namespace PluginOkta.API.Utility.EndpointHelperEndpoints
 
                     foreach (var user in userResponseWrapper)
                     {
-                        after = $"&after={user.Id}";
                         var emailId = 0;
                         foreach (var email in user.Credentials.Emails)
                         {
@@ -259,10 +279,10 @@ namespace PluginOkta.API.Utility.EndpointHelperEndpoints
                 }
             },
             {
-                "UserEmails", new UserEmailsEndpoints
+                "AllUserEmails", new UserEmailsEndpoints
                 {
-                    Id = "UserEmails",
-                    Name = "User Emails",
+                    Id = "AllUserEmails",
+                    Name = "All User Emails",
                     QueryPath = "/api/v1/users?limit=200",
                     SupportedActions = new List<EndpointActions>
                     {
