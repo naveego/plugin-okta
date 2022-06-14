@@ -78,12 +78,15 @@ namespace PluginOkta.API.Utility.EndpointHelperEndpoints
             }
             public override async IAsyncEnumerable<Record> ReadRecordsAsync(IApiClient apiClient, Schema schema, bool isDiscoverRead = false)
             {
+                var after = "";
+                var limit = 200;
+                var recordCount = 0;
                 var hasMore = true;
                 var settings = await apiClient.GetSettings();
-                var path = $"{settings.Domain.TrimEnd('/')}{QueryPath}";
                 do
                 {
-                    var response = await apiClient.GetAsync(path);
+                    var response = await apiClient.GetAsync($"{settings.Domain.TrimEnd('/')}{QueryPath}limit={limit}{after}");
+
                     if (response.StatusCode == HttpStatusCode.BadRequest)
                     {
                         var errorResponseWrapper =
@@ -93,33 +96,26 @@ namespace PluginOkta.API.Utility.EndpointHelperEndpoints
                             hasMore = false;
                             continue;
                         }
+                        else
+                        {
+                            throw new Exception(errorResponseWrapper.ErrorSummary);
+                        }
                     }
                     
                     response.EnsureSuccessStatusCode();
 
-                    var linkHeader = response.Headers.GetValues("Link");
-
-                    if (linkHeader.Count() < 2)
-                    {
-                        hasMore = false;
-                    }
-                    else
-                    {
-                        var link = linkHeader.ElementAt(1);
-                        path = link.Split('<', '>')[1];
-                    }
-                    
                     var userResponseWrapper =
                         JsonConvert.DeserializeObject<List<User>>(await response.Content.ReadAsStringAsync());
 
-                    if (userResponseWrapper?.Count == 0)
+                    if (userResponseWrapper?.Count < limit)
                     {
                         hasMore = false;
-                        continue;
                     }
 
                     foreach (var user in userResponseWrapper)
                     {
+                        after = $"&after={recordCount}";
+                        recordCount++;
                         var recordMap = new Dictionary<string, string>();
 
                         recordMap["id"] = user.Id;
@@ -157,7 +153,6 @@ namespace PluginOkta.API.Utility.EndpointHelperEndpoints
                 List<string> staticSchemaProperties = new List<string>()
                 {
                     "id",
-                    "email.id",
                     "email.status",
                     "email.type",
                     "email.value"
@@ -175,7 +170,6 @@ namespace PluginOkta.API.Utility.EndpointHelperEndpoints
                     switch (staticProperty)
                     {
                         case ("id"):
-                        case ("email.id"):
                             property.IsKey = true;
                             property.Type = PropertyType.String;
                             property.TypeAtSource = "string";
@@ -199,12 +193,15 @@ namespace PluginOkta.API.Utility.EndpointHelperEndpoints
             }
             public override async IAsyncEnumerable<Record> ReadRecordsAsync(IApiClient apiClient, Schema schema, bool isDiscoverRead = false)
             {
+                
+                var after = "";
+                var limit = 200;
+                var recordCount = 0;
                 var hasMore = true;
                 var settings = await apiClient.GetSettings();
-                var path = $"{settings.Domain.TrimEnd('/')}{QueryPath}";
                 do
                 {
-                    var response = await apiClient.GetAsync(path);
+                    var response = await apiClient.GetAsync($"{settings.Domain.TrimEnd('/')}{QueryPath}limit={limit}{after}");
 
                     if (response.StatusCode == HttpStatusCode.BadRequest)
                     {
@@ -218,41 +215,27 @@ namespace PluginOkta.API.Utility.EndpointHelperEndpoints
                     }
                     
                     response.EnsureSuccessStatusCode();
-                    
-                    var linkHeader = response.Headers.GetValues("Link");
 
-                    if (linkHeader.Count() < 2)
-                    {
-                        hasMore = false;
-                    }
-                    else
-                    {
-                        var link = linkHeader.ElementAt(1);
-                        path = link.Split('<', '>')[1];
-                    }
                     var userResponseWrapper =
                         JsonConvert.DeserializeObject<List<User>>(await response.Content.ReadAsStringAsync());
 
-                    if (userResponseWrapper?.Count == 0)
+                    if (userResponseWrapper?.Count < limit)
                     {
                         hasMore = false;
-                        continue;
                     }
-
                     foreach (var user in userResponseWrapper)
                     {
-                        var emailId = 0;
+                        after = $"&after={recordCount}";
+                        recordCount++;
                         foreach (var email in user.Credentials.Emails)
                         {
                             var recordMap = new Dictionary<string, string>();
 
                             recordMap["id"] = user.Id;
-                            recordMap["email.id"] = emailId.ToString();
                             recordMap["email.status"] = email.Status;
                             recordMap["email.type"] = email.Type;
                             recordMap["email.value"] = email.Value;
 
-                            emailId++;
                             yield return new Record
                             {
                                 Action = Record.Types.Action.Upsert,
@@ -270,7 +253,7 @@ namespace PluginOkta.API.Utility.EndpointHelperEndpoints
                 {
                     Id = "AllUsers",
                     Name = "All Users",
-                    QueryPath = "/api/v1/users?limit=200",
+                    QueryPath = "/api/v1/users?",
                     SupportedActions = new List<EndpointActions>
                     {
                         EndpointActions.Get
@@ -279,11 +262,11 @@ namespace PluginOkta.API.Utility.EndpointHelperEndpoints
                 }
             },
             {
-                "AllUserEmails", new UserEmailsEndpoints
+                "UserEmails", new UserEmailsEndpoints
                 {
-                    Id = "AllUserEmails",
-                    Name = "All User Emails",
-                    QueryPath = "/api/v1/users?limit=200",
+                    Id = "UserEmails",
+                    Name = "User Emails",
+                    QueryPath = "/api/v1/users?",
                     SupportedActions = new List<EndpointActions>
                     {
                         EndpointActions.Get

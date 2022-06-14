@@ -22,9 +22,9 @@ namespace PluginOkta.Helper
             {
                 throw new Exception("the Domain property must be set");
             }
-            if (!Domain.StartsWith("https://"))
+            if (!Domain.StartsWith("https://") && !Domain.StartsWith("http://"))
             {
-                throw new Exception("the Domain property must start with https://");
+                throw new Exception("the Domain property must start with https:// or http://");
             }
         }
     }
